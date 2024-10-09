@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { fetchDNSRecords } from '../src/dnsRefresh';
+import { fetchDNSRecords, loadDNSRecords } from '../src/dnsRefresh';
+import * as path from 'path';
 
 jest.mock('axios');
 const mockedAxios = jest.mocked(axios);
@@ -58,5 +59,17 @@ describe('DNS Refresh Tests', () => {
         await expect(fetchDNSRecords('invalid.example.com')).rejects.toThrow(
             'Failed to fetch DNS records for invalid.example.com: 3'
         );
+    });
+
+
+    test('Should load DNS records from CSV', async() => {
+        const currentFilePath = __filename;
+        const currentDirectory = path.dirname(currentFilePath);
+
+        const csvFileName = 'dnsRecords.csv';
+
+        const csvFilePath = path.join(currentDirectory, csvFileName);
+        const dnsRecords = await loadDNSRecords(csvFilePath);
+        expect(dnsRecords).toEqual([{ hostname: 'example.com', currentIPs: ['1.1.1.1'] }]);
     });
 });
