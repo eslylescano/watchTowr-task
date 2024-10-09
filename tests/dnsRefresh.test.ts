@@ -1,6 +1,7 @@
 import axios from 'axios';
-import { fetchDNSRecords, loadDNSRecords } from '../src/dnsRefresh';
+import { fetchDNSRecords, loadDNSRecords, saveDNSRecords } from '../src/dnsRefresh';
 import * as path from 'path';
+import { readFromFile } from '../src/utils';
 
 jest.mock('axios');
 const mockedAxios = jest.mocked(axios);
@@ -61,15 +62,40 @@ describe('DNS Refresh Tests', () => {
         );
     });
 
-
+    
     test('Should load DNS records from CSV', async() => {
         const currentFilePath = __filename;
         const currentDirectory = path.dirname(currentFilePath);
-
         const csvFileName = 'dnsRecords.csv';
-
         const csvFilePath = path.join(currentDirectory, csvFileName);
+
+        const records = [
+            { hostname: 'example.com', ip: '1.1.1.1' },
+            { hostname: 'example.com', ip: '1.2.4.5' },
+            { hostname: 'anotherdomain.com', ip: '2.2.2.2' },
+        ];
+
         const dnsRecords = await loadDNSRecords(csvFilePath);
-        expect(dnsRecords).toEqual([{ hostname: 'example.com', currentIPs: ['1.1.1.1'] }]);
+        expect(dnsRecords).toEqual(records);
+    });
+
+    test('Should save DNS records to CSV and verify the content', async () => {
+        const currentFilePath = __filename;
+        const currentDirectory = path.dirname(currentFilePath);
+        const csvFileName = 'dnsRecords.csv';
+        const csvFilePath = path.join(currentDirectory, csvFileName);
+        
+        const records = [
+            { hostname: 'example.com', ip: '1.1.1.1' },
+            { hostname: 'example.com', ip: '1.2.4.5' },
+            { hostname: 'anotherdomain.com', ip: '2.2.2.2' },
+        ];
+    
+        await saveDNSRecords(records, csvFilePath);
+    
+        const fileContent = await readFromFile(csvFilePath);
+        const expectedCsvData = 'hostname,ip\nexample.com,1.1.1.1\nexample.com,1.2.4.5\nanotherdomain.com,2.2.2.2';
+    
+        expect(fileContent.trim()).toBe(expectedCsvData);
     });
 });
