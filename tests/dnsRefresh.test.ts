@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { fetchDNSRecords, loadDNSRecords, saveDNSRecords } from '../src/dnsRefresh';
+import { fetchDNSRecords, loadDNSRecords, saveDNSRecords, updateDNSRecords } from '../src/dnsRefresh';
 import * as path from 'path';
 import { readFromFile } from '../src/utils';
 
@@ -70,9 +70,9 @@ describe('DNS Refresh Tests', () => {
         const csvFilePath = path.join(currentDirectory, csvFileName);
 
         const records = [
-            { hostname: 'example.com', ip: '1.1.1.1' },
-            { hostname: 'example.com', ip: '1.2.4.5' },
-            { hostname: 'anotherdomain.com', ip: '2.2.2.2' },
+            { hostname: 'example.com', ip: '1.1.1.1',status:'active' },
+            { hostname: 'example.com', ip: '1.2.4.5',status:'active' },
+            { hostname: 'anotherdomain.com', ip: '2.2.2.2',status:'active' },
         ];
 
         const dnsRecords = await loadDNSRecords(csvFilePath);
@@ -86,16 +86,50 @@ describe('DNS Refresh Tests', () => {
         const csvFilePath = path.join(currentDirectory, csvFileName);
         
         const records = [
-            { hostname: 'example.com', ip: '1.1.1.1' },
-            { hostname: 'example.com', ip: '1.2.4.5' },
-            { hostname: 'anotherdomain.com', ip: '2.2.2.2' },
+            { hostname: 'example.com', ip: '1.1.1.1',status:'active' },
+            { hostname: 'example.com', ip: '1.2.4.5',status:'active' },
+            { hostname: 'anotherdomain.com', ip: '2.2.2.2',status:'active' },
         ];
     
         await saveDNSRecords(records, csvFilePath);
     
         const fileContent = await readFromFile(csvFilePath);
-        const expectedCsvData = 'hostname,ip\nexample.com,1.1.1.1\nexample.com,1.2.4.5\nanotherdomain.com,2.2.2.2';
+        const expectedCsvData = 'hostname,ip,status\nexample.com,1.1.1.1,active\nexample.com,1.2.4.5,active\nanotherdomain.com,2.2.2.2,active';
     
         expect(fileContent.trim()).toBe(expectedCsvData);
+    });
+
+    test('Should update DNS records when adding a new IP', () => {
+        const records = [
+            { hostname: 'example.com', ip: '1.1.1.1', status: 'active' },
+            { hostname: 'example.com', ip: '1.2.4.5', status: 'active' },
+            { hostname: 'anotherdomain.com', ip: '2.2.2.2', status: 'active' },
+        ];
+
+        const updatedRecords = updateDNSRecords(records, { hostname: 'example.com', ip: '1.1.1.2' });
+        expect(updatedRecords).toEqual([
+            { hostname: 'example.com', ip: '1.1.1.1', status: 'hanging' },
+            { hostname: 'example.com', ip: '1.2.4.5', status: 'hanging' },
+            { hostname: 'anotherdomain.com', ip: '2.2.2.2', status: 'active' },
+            { hostname: 'example.com', ip: '1.1.1.2', status: 'active' },
+        ]);
+    });
+
+    test('Should leave records unchanged if the IP already exists', () => {
+        const records = [
+            { hostname: 'example.com', ip: '1.1.1.1', status: 'active' },
+            { hostname: 'example.com', ip: '1.2.4.5', status: 'active' },
+            { hostname: 'anotherdomain.com', ip: '2.2.2.2', status: 'active' },
+        ];
+
+        const updatedRecords = updateDNSRecords(records, { hostname: 'example.com', ip: '1.1.1.1' });
+        expect(updatedRecords).toEqual(records);
+    });
+
+    test('Should add new ip if not exist', () => {
+        let records: any[]  = [];
+
+        const updatedRecords = updateDNSRecords(records, { hostname: 'example.com', ip: '1.1.1.1' });
+        expect(updatedRecords).toEqual([{ hostname: 'example.com', ip: '1.1.1.1',status:'active' }]);
     });
 });

@@ -11,13 +11,13 @@ export const fetchDNSRecords = async (hostname: string): Promise<string[]> => {
     return response.data.Answer.map((record: { data: string }) => record.data);
 };
 
-export const loadDNSRecords = async (filePath: string): Promise<{ hostname: string; ip: string }[]> => {
+export const loadDNSRecords = async (filePath: string): Promise<{ hostname: string; ip: string; status:string }[]> => {
     try {
         const csvData = await readFromFile(filePath);
 
         return csvData.split('\n').slice(1).map((line: string) => {
-            const [hostname, ip] = line.split(',');
-            return { hostname, ip: ip.trim() };
+            const [hostname, ip, status] = line.split(',');
+            return { hostname, ip, status };
         });
     } catch (error) {
         console.error(`Failed to load DNS records from ${filePath}:`, error);
@@ -26,10 +26,10 @@ export const loadDNSRecords = async (filePath: string): Promise<{ hostname: stri
 };
 
 
-export const saveDNSRecords = async (records: { hostname: string; ip: string }[], filePath: string) => {
+export const saveDNSRecords = async (records: { hostname: string; ip: string,status:string }[], filePath: string) => {
     const csvData = [
-        'hostname,ip',
-        ...records.map(record => `${record.hostname},${record.ip}`),
+        'hostname,ip,status',
+        ...records.map(record => `${record.hostname},${record.ip},${record.status}`),
     ].join('\n');
 
     try {
@@ -37,6 +37,31 @@ export const saveDNSRecords = async (records: { hostname: string; ip: string }[]
     } catch (error) {
         console.error(`Failed to save DNS records to ${filePath}:`, error);
     }
+};
+
+
+export const updateDNSRecords = (
+    records: { hostname: string; ip: string; status: string }[],
+    newRecord: { hostname: string; ip: string }
+) => {
+    const { hostname, ip } = newRecord;
+
+    const existingIP = records.find(record => record.hostname === hostname && record.ip === ip);
+
+    if (existingIP) {
+        return records;
+    }
+
+    const updatedRecords = records.map(record => {
+        if (record.hostname === hostname) {
+            return { ...record, status: 'hanging' };
+        }
+        return record;
+    });
+
+    updatedRecords.push({ hostname, ip, status: 'active' });
+
+    return updatedRecords;
 };
 
 
