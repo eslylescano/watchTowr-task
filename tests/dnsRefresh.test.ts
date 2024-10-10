@@ -25,7 +25,7 @@ describe('DNS Refresh Tests', () => {
         mockedAxios.get.mockResolvedValue(mockDNSResponse);
 
         const result = await fetchDNSRecords('example.com');
-        expect(result).toEqual(['93.184.215.14']);
+        expect(result).toEqual('93.184.215.14');
     });
 
     test('Should throw an error for an invalid hostname', async () => {

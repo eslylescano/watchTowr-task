@@ -15,13 +15,13 @@ export function readFromFile(filePath: string): Promise<any> {
 
   export async function writeToFile(filePath: string, data: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      fs.writeFile(filePath, data, (err) => {
+      fs.writeFile(filePath, data, { flag: 'w' }, (err) => {
         if (err) {
           console.error('Error writing to file:', err);
           reject(err);
           return;
-        } 
-          resolve();
+        }
+        resolve();
       });
     });
   }
